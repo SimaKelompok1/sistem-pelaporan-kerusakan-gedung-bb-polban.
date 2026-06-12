@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal Teknisi - Update Status Kerusakan Gedung BB</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 min-h-screen py-10 px-4 text-gray-100">
+
+    <div class="max-w-4xl mx-auto">
+        <div class="flex justify-between items-center mb-8 border-b border-gray-800 pb-4">
+            <div>
+                <h1 class="text-2xl font-bold text-blue-400">🔧 Portal Internal Teknisi Sarpras</h1>
+                <p class="text-sm text-gray-400">Khusus Manajemen Kondisi & Perbaikan Gedung BB</p>
+            </div>
+            <a href="index.html" class="text-sm bg-gray-800 hover:bg-gray-700 px-4 py-2 rounded-xl border border-gray-700 transition">Lihat Dashboard Utama →</a>
+        </div>
+
+        <div class="space-y-4">
+            <h3 class="text-lg font-semibold text-gray-300">Daftar Tugas Perbaikan Aktif</h3>
+            
+            <div id="containerSemuaTugasTeknisi" class="space-y-4">
+                <p id="teksTeknisiKosong" class="text-center text-sm text-gray-500 py-6">Belum ada tugas perbaikan masuk.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        window.onload = function() {
+            tampilkanTugasTeknisi();
+        }
+
+        function tampilkanTugasTeknisi() {
+            // Ambil database laporan
+            const listLaporan = JSON.parse(localStorage.getItem('databaseLaporan')) || [];
+            const kontainer = document.getElementById('containerSemuaTugasTeknisi');
+            kontainer.innerHTML = ""; // Bersihkan kontainer
+
+            if(listLaporan.length > 0) {
+                // Kita looping dari index paling akhir (data terbaru) ke index awal tanpa merusak array asli
+                for (let i = listLaporan.length - 1; i >= 0; i--) {
+                    const laporan = listLaporan[i];
+
+                    kontainer.innerHTML += `
+                        <div class="bg-gray-800 p-6 rounded-2xl border border-gray-700 space-y-4">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <span class="text-xs font-bold bg-blue-900/50 text-blue-300 px-2.5 py-1 rounded-full border border-blue-800">${laporan.id}</span>
+                                    <h4 class="font-bold text-lg text-white mt-2">${laporan.kelas} — <span class="font-normal text-gray-400">${laporan.deskripsi}</span></h4>
+                                    <p class="text-xs text-gray-400 mt-1">Dilaporkan oleh: ${laporan.nama} | Waktu: ${laporan.waktu}</p>
+                                    
+                                    <div class="mt-3 p-3 bg-gray-900/60 rounded-xl border border-gray-700/50 space-y-3">
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-xs text-gray-400 flex items-center gap-1">
+                                                📷 Bukti_Fisik_Kerusakan.jpg
+                                            </span>
+                                            <button onclick="toggleFoto('${laporan.id}')" class="text-xs bg-blue-600/30 hover:bg-blue-600/50 text-blue-300 border border-blue-700/50 px-3 py-1 rounded-lg transition font-medium">
+                                                👁️ Lihat Foto
+                                            </button>
+                                        </div>
+                                        <div id="boxFoto-${laporan.id}" class="hidden w-full max-w-xs border border-gray-700 rounded-xl overflow-hidden bg-gray-900">
+                                            <img src="${laporan.foto || 'https://images.unsplash.com/photo-1534073828943-f801091bb18c?w=400'}" alt="Bukti Kerusakan" class="w-full h-auto object-cover">
+                                        </div>
+                                    </div>
+                                </div>
+                                <span class="text-xs font-bold bg-amber-900/40 text-amber-400 px-3 py-1 rounded-lg border border-amber-800">Status: ${laporan.status}</span>
+                            </div>
+
+                            <div class="bg-gray-800/50 p-4 rounded-xl border border-gray-700/60">
+                                <p class="text-xs font-medium text-gray-400 mb-2">Pilih Aksi Update Status Perbaikan:</p>
+                                <div class="flex flex-wrap gap-2">
+                                    <button onclick="updateStatusTeknisi(${i}, 'Diverifikasi')" class="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-xs font-semibold rounded-lg transition">🔍 Set 'Diverifikasi'</button>
+                                    <button onclick="updateStatusTeknisi(${i}, 'Sedang Diperbaiki')" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-xs font-semibold text-white rounded-lg transition">🛠️ Set 'Sedang Diperbaiki'</button>
+                                    <button onclick="updateStatusTeknisi(${i}, 'Selesai')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-xs font-semibold text-white rounded-lg transition">✅ Set 'Selesai'</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            } else {
+                kontainer.innerHTML = `<p class="text-center text-sm text-gray-500 py-6">Belum ada tugas perbaikan masuk.</p>`;
+            }
+        }
+
+        function updateStatusTeknisi(indexAsli, statusBaru) {
+            const listLaporan = JSON.parse(localStorage.getItem('databaseLaporan')) || [];
+            listLaporan[indexAsli].status = statusBaru;
+            
+            localStorage.setItem('databaseLaporan', JSON.stringify(listLaporan));
+            alert('Sukses mengubah status tiket ' + listLaporan[indexAsli].id + ' menjadi ' + statusBaru);
+            tampilkanTugasTeknisi(); // Refresh halaman tempat
+        }
+
+        function toggleFoto(idTiket) {
+            const box = document.getElementById('boxFoto-' + idTiket);
+            if (box.classList.contains('hidden')) {
+                box.classList.remove('hidden');
+            } else {
+                box.classList.add('hidden');
+            }
+        }
+    </script>
+</body>
+</html>

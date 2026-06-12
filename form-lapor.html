@@ -1,0 +1,114 @@
+<<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Form Pelaporan Kerusakan Gedung BB</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen py-10 px-4">
+
+    <div class="max-w-md mx-auto bg-white p-6 rounded-2xl shadow-md border border-gray-100">
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-bold text-gray-800">Form Pelaporan</h2>
+            <a href="index.html" class="text-sm font-semibold text-blue-600 hover:underline">← Kembali</a>
+        </div>
+        
+        <form id="reportForm" class="space-y-4">
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Nama Pelapor</label>
+                <input type="text" id="namaPelapor" placeholder="Masukkan nama Anda" class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+            </div>
+
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Waktu Melaporkan</label>
+                <input type="datetime-local" id="waktuLapor" class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+            </div>
+
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Lokasi Gedung</label>
+                <input type="text" value="Gedung BB" class="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-xl text-gray-500 cursor-not-allowed" readonly>
+            </div>
+
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Lokasi Kelas / Area Detail</label>
+                <input type="text" id="lokasiKelas" placeholder="Contoh: BB-201, Tangga Lantai 1" class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+            </div>
+
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Deskripsi Kerusakan</label>
+                <textarea id="deskripsi" rows="3" placeholder="Detail kerusakan..." class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500" required></textarea>
+            </div>
+
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Foto Objek Rusak</label>
+                <input type="file" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+            </div>
+
+            <button type="submit" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg transition duration-200 mt-2">Kirim Laporan 🚀</button>
+        </form>
+    </div>
+
+    <script>
+    const FIREBASE_URL = "https://sima-kel-1-default-rtdb.firebaseio.com/laporan.json";
+
+    document.getElementById('formLaporan').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const pelapor = document.getElementById('namaPelapor').value;
+        const lokasi = document.getElementById('lokasiGedung').value;
+        const deskripsi = document.getElementById('deskripsiKerusakan').value;
+        const fotoInput = document.getElementById('fotoKerusakan');
+
+        // Mengatur waktu input secara otomatis
+        const sekarang = new Date();
+        const waktuStr = sekarang.getFullYear() + '-' + 
+                         String(sekarang.getMonth() + 1).padStart(2, '0') + '-' + 
+                         String(sekarang.getDate()).padStart(2, '0') + ' ' + 
+                         String(sekarang.getHours()).padStart(2, '0') + ':' + 
+                         String(sekarang.getMinutes()).padStart(2, '0');
+
+        // Bikin ID unik acak (misal #BB-482)
+        const idUnik = "#BB-" + Math.floor(100 + Math.random() * 900);
+
+        // Fungsi kirim data ke Firebase
+        const kirimKeFirebase = (fotoBase64) => {
+            const dataLaporan = {
+                id: idUnik,
+                waktu: waktuStr,
+                judul: lokasi + " — " + deskripsi,
+                pelapor: pelapor,
+                petugas: "Pak Toto",
+                status: "Diterima",
+                foto: fotoBase64
+            };
+
+            fetch(FIREBASE_URL, {
+                method: "POST",
+                body: JSON.stringify(dataLaporan)
+            })
+            .then(res => {
+                if(res.ok) {
+                    alert("Laporan berhasil dikirim ke Database Pusat!");
+                    window.location.href = "index.html"; // Balik ke Dashboard otomatis
+                } else {
+                    alert("Gagal konek ke database.");
+                }
+            })
+            .catch(err => console.error(err));
+        };
+
+        // Proses convert foto ke teks (Base64) agar bisa disimpan online
+        if (fotoInput.files && fotoInput.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                kirimKeFirebase(e.target.result);
+            };
+            reader.readAsDataURL(fotoInput.files[0]);
+        } else {
+            kirimKeFirebase(""); // Jika tidak ada foto
+        }
+    });
+</script>
+</body>
+</html>

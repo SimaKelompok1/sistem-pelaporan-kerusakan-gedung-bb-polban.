@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Pelaporan Kerusakan Gedung Polban - Gedung BB</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen py-10 px-4">
+
+    <div class="max-w-4xl mx-auto text-center mb-10">
+        <h1 class="text-3xl font-bold text-gray-800 mb-2">Dashboard Pelaporan Kerusakan</h1>
+        <p class="text-gray-500 mb-6">Monitoring Fasilitas Fisik & Utilitas Gedung BB Polban</p>
+        
+        <div class="grid grid-cols-3 gap-4">
+            <div class="bg-amber-50 p-5 rounded-2xl border border-amber-200 shadow-sm text-center">
+                <p class="text-xs font-bold text-amber-700 uppercase tracking-wider">Menunggu</p>
+                <p id="countMenunggu" class="text-4xl font-bold text-amber-600 mt-2">0</p>
+            </div>
+            <div class="bg-blue-50 p-5 rounded-2xl border border-blue-200 shadow-sm text-center">
+                <p class="text-xs font-bold text-blue-700 uppercase tracking-wider">Diproses</p>
+                <p id="countDiproses" class="text-4xl font-bold text-blue-600 mt-2">0</p>
+            </div>
+            <div class="bg-emerald-50 p-5 rounded-2xl border border-emerald-200 shadow-sm text-center">
+                <p class="text-xs font-bold text-emerald-700 uppercase tracking-wider">Selesai</p>
+                <p id="countSelesai" class="text-4xl font-bold text-emerald-600 mt-2">0</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-4xl mx-auto bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-4">
+        <div class="flex justify-between items-center mb-2">
+            <h3 class="text-lg font-bold text-gray-800">Semua Riwayat Laporan Masuk</h3>
+            <a href="form-lapor.html" class="text-sm font-semibold text-blue-600 hover:underline">+ Buat Laporan Baru</a>
+        </div>
+        
+        <div id="listSemuaLaporan" class="space-y-4">
+            <p id="teksKosong" class="text-center text-sm text-gray-400 py-6">Belum ada laporan masuk. Silakan isi form terlebih dahulu.</p>
+</div>
+        </div>
+    </div>
+    <div class="max-w-4xl mx-auto text-center mt-12 pb-6">
+        <a href="teknisi.html" class="text-xs text-gray-400 hover:text-gray-600 transition">🔒 Masuk sebagai Teknisi Sarpras</a>
+    </div>
+
+    <script>
+    const FIREBASE_URL = "https://sima-kel-1-default-rtdb.firebaseio.com/laporan.json";
+
+    function muatDataFirebase() {
+        fetch(FIREBASE_URL)
+        .then(res => res.json())
+        .then(data => {
+            const container = document.getElementById('teksKosong').parentElement;
+            
+            // Hapus isi data lama biar gak dobel saat refresh otomatis
+            container.innerHTML = "";
+
+            // Jika database kosong, tampilkan data dummy awal biar gak polosan
+            if (!data) {
+                document.getElementById('countMenunggu').innerText = "0";
+                document.getElementById('countDiproses').innerText = "0";
+                document.getElementById('countSelesai').innerText = "0";
+                container.innerHTML = `<p class="text-center text-sm text-gray-400 py-6">Belum ada laporan masuk dari internet.</p>`;
+                return;
+            }
+
+            let jmlMenunggu = 0;
+            let jmlDiproses = 0;
+            let jmlSelesai = 0;
+
+            // Looping membaca semua data dari Firebase
+            Object.keys(data).reverse().forEach(key => {
+                const item = data[key];
+
+                // Hitung jumlah status otomatis
+                if (item.status === "Diterima") jmlMenunggu++;
+                if (item.status === "Diproses") jmlDiproses++;
+                if (item.status === "Selesai") jmlSelesai++;
+
+                // Tentukan warna badge status
+                let warnaBadge = "bg-yellow-100 text-yellow-800";
+                if (item.status === "Diproses") warnaBadge = "bg-blue-100 text-blue-800";
+                if (item.status === "Selesai") warnaBadge = "bg-emerald-100 text-emerald-800";
+
+                // Tampilkan foto jika ada pelapor yang upload foto
+                let tagFoto = "";
+                if (item.foto) {
+                    tagFoto = `<img src="${item.foto}" class="mt-3 rounded-lg max-h-40 object-cover w-full border border-gray-100">`;
+                }
+
+                // Cetak kartu riwayat ke layar HTML
+                const kartuHTML = `
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 text-left mb-3 animate-fade-in">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded">${item.id}</span>
+                            <span class="text-xs text-gray-500">${item.waktu}</span>
+                        </div>
+                        <h4 class="font-semibold text-gray-800 text-sm">${item.judul}</h4>
+                        <p class="text-xs text-gray-500 mt-1">Pelapor: ${item.pelapor} | Petugas: ${item.petugas}</p>
+                        ${tagFoto}
+                        <span class="text-xs ${warnaBadge} px-2 py-0.5 rounded-full font-medium mt-2 inline-block">${item.status}</span>
+                    </div>
+                `;
+                container.innerHTML += kartuHTML;
+            });
+
+            // Update angka counter dashboard di atas secara otomatis
+            document.getElementById('countMenunggu').innerText = jmlMenunggu;
+            document.getElementById('countDiproses').innerText = jmlDiproses;
+            document.getElementById('countSelesai').innerText = jmlSelesai;
+        })
+        .catch(err => console.error(err));
+    }
+
+    // Jalankan fungsi panggil data saat halaman pertama dibuka
+    muatDataFirebase();
+
+    // SERVER DETEKSI REAL-TIME: Otomatis nge-refresh data setiap 4 detik 
+    // Jadi pas volunteer klik kirim di HP, laptop proyektor kamu bakal langsung berubah otomatis!
+    setInterval(muatDataFirebase, 4000);
+</script>
+</body>
+</html>
